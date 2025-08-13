@@ -56,54 +56,7 @@ const MainContent: React.FC<MainContentProps> = ({ onCtaClick }) => {
   
 
   return (
-    <div className="pb-20">
-      {/* Sección ¿Qué incluye? - Simplificada */}
-      <section className="py-16 bg-gradient-to-b from-black to-gray-900">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-8 text-center">
-            <span className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent">
-              ¿Qué incluye
-            </span>
-            <span className="text-white"> el pack?</span>
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-6 mb-12">
-            <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 p-6 rounded-2xl border border-yellow-500/30">
-              <div className="text-4xl mb-3">🔥</div>
-              <h3 className="text-xl font-bold text-yellow-400 mb-2">+30,000 Videos HD</h3>
-              <p className="text-gray-300">Coches de lujo, yates, mansiones, viajes premium</p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 p-6 rounded-2xl border border-yellow-500/30">
-              <div className="text-4xl mb-3">♾️</div>
-              <h3 className="text-xl font-bold text-yellow-400 mb-2">Acceso de por vida</h3>
-              <p className="text-gray-300">Google Drive con +4TB de contenido</p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 p-6 rounded-2xl border border-yellow-500/30">
-              <div className="text-4xl mb-3">📱</div>
-              <h3 className="text-xl font-bold text-yellow-400 mb-2">Todas las redes</h3>
-              <p className="text-gray-300">TikTok, Instagram, YouTube Shorts</p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 p-6 rounded-2xl border border-yellow-500/30">
-              <div className="text-4xl mb-3">⚖️</div>
-              <h3 className="text-xl font-bold text-yellow-400 mb-2">Uso comercial</h3>
-              <p className="text-gray-300">Monetiza sin restricciones</p>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <button 
-              onClick={onCtaClick}
-              className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-bold text-lg px-8 py-4 rounded-xl hover:from-yellow-500 hover:to-yellow-700 transform hover:scale-105 transition-all duration-300 shadow-2xl"
-            >
-              COMPRAR AHORA
-            </button>
-          </div>
-        </div>
-      </section>
-
+    <div className="pb-10">
       {/* Video Preview Section */}
       <VideoPreview onVideoClick={handleVideoClick} />
 

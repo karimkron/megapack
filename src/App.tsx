@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Hero from './components/Hero';
 import MainContent from './components/MainContent';
 import FixedCTA from './components/FixedCTA';
+import ContentDetails from './components/ContentDetails';
 
 function App() {
   const [showFixedCTA, setShowFixedCTA] = useState(false);
@@ -90,7 +91,9 @@ function App() {
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
       <Hero onCtaClick={handleCtaClick} />
+      <ContentDetails onCtaClick={handleCtaClick} />
       <MainContent onCtaClick={handleCtaClick} />
+      {/* Fixed CTA that appears after scrolling past the hero section */}
       <FixedCTA onClick={handleCtaClick} isVisible={showFixedCTA} />
     </div>
   );
