@@ -34,7 +34,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
     };
   }, [isOpen]);
 
-  // Auto-hide controls after 2 seconds
+  // Auto-hide controls after 4 seconds
   useEffect(() => {
     if (showControls) {
       if (controlsTimeout) {
@@ -43,7 +43,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
       
       const timeout = setTimeout(() => {
         setShowControls(false);
-      }, 2000);
+      }, 4000); // Cambiado de 2000 a 4000ms (4 segundos)
       
       setControlsTimeout(timeout);
     }
@@ -59,6 +59,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
   const handleVideoClick = () => {
     setShowControls(true);
   };
+
   const nextVideo = () => {
     setCurrentVideoIndex((prev) => (prev + 1) % videos.length);
     setShowControls(true);
@@ -130,12 +131,12 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
   const currentVideo = videos[currentVideoIndex];
 
   return (
-    <div className={`fixed inset-0 z-50 bg-black flex items-center justify-center ${isFullscreen ? 'p-0' : 'p-4'}`}>
-      <div className={`relative ${isFullscreen ? 'w-full h-full' : 'w-full max-w-sm mx-auto'}`}>
-        {/* Close button */}
+    <div className="fixed inset-0 z-50 bg-black flex items-center justify-center p-4">
+      <div className="relative w-full max-w-sm mx-auto">
+        {/* Close button - mejor posicionamiento */}
         <button
           onClick={onClose}
-          className={`absolute ${isFullscreen ? 'top-4 right-4' : '-top-12 right-0'} text-white hover:text-yellow-400 transition-all duration-300 z-20 bg-black/50 rounded-full p-2 ${
+          className={`absolute top-2 right-2 text-white hover:text-yellow-400 transition-all duration-300 z-30 bg-black/70 rounded-full p-2 backdrop-blur-sm ${
             showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
         >
@@ -145,24 +146,23 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
         {/* Video container */}
         <div 
           id="video-container" 
-          className={`relative bg-black overflow-hidden ${isFullscreen ? 'w-full h-full' : 'rounded-lg'}`} 
-          style={isFullscreen ? {} : { aspectRatio: '9/16' }}
+          className="relative bg-black overflow-hidden rounded-lg" 
+          style={{ aspectRatio: '9/16' }}
           onClick={handleVideoClick}
         >
           <video
-  src={currentVideo.thumbnail}
-  className="w-full h-full object-contain"
-  muted={isMuted}
-  autoPlay
-  controls={false}
-  onClick={handleVideoClick}
-/>
-
+            src={currentVideo.thumbnail}
+            className="w-full h-full object-contain"
+            muted={isMuted}
+            autoPlay
+            controls={false}
+            onClick={handleVideoClick}
+          />
 
           {/* Navigation arrows */}
           <button
             onClick={prevVideo}
-            className={`absolute left-4 top-1/2 -translate-y-1/2 bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-all duration-300 z-10 ${
+            className={`absolute left-4 top-1/2 -translate-y-1/2 bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-all duration-300 z-10 backdrop-blur-sm ${
               showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           >
@@ -171,7 +171,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
 
           <button
             onClick={nextVideo}
-            className={`absolute right-4 top-1/2 -translate-y-1/2 bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-all duration-300 z-10 ${
+            className={`absolute right-4 top-1/2 -translate-y-1/2 bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-all duration-300 z-10 backdrop-blur-sm ${
               showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           >
@@ -185,7 +185,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
             {/* Mute button */}
             <button
               onClick={toggleMute}
-              className="bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-colors"
+              className="bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-colors backdrop-blur-sm"
             >
               {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
             </button>
@@ -193,11 +193,23 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
             {/* Fullscreen button */}
             <button
               onClick={toggleFullscreen}
-              className="bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-colors"
+              className="bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-colors backdrop-blur-sm"
             >
               <Maximize className="w-5 h-5" />
             </button>
           </div>
+
+          {/* En pantalla completa, mostrar el botón X en una posición segura */}
+          {isFullscreen && (
+            <button
+              onClick={onClose}
+              className={`absolute top-4 right-4 text-white hover:text-yellow-400 transition-all duration-300 z-30 bg-black/70 rounded-full p-3 backdrop-blur-sm ${
+                showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              <X className="w-7 h-7" />
+            </button>
+          )}
         </div>
       </div>
     </div>
