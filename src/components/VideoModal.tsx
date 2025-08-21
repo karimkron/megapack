@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Maximize, VolumeX, Volume2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, VolumeX, Volume2 } from 'lucide-react';
 
 interface VideoModalProps {
   isOpen: boolean;
@@ -13,7 +13,6 @@ interface VideoModalProps {
 
 const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initialVideoIndex }) => {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(initialVideoIndex);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [controlsTimeout, setControlsTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
@@ -70,61 +69,10 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
     setShowControls(true);
   };
 
-  const toggleFullscreen = () => {
-    const videoContainer = document.getElementById('video-container');
-    
-    if (videoContainer) {
-      if (!document.fullscreenElement) {
-        // Try different fullscreen methods for mobile compatibility
-        if (videoContainer.requestFullscreen) {
-          videoContainer.requestFullscreen();
-        } else if ((videoContainer as any).webkitRequestFullscreen) {
-          (videoContainer as any).webkitRequestFullscreen();
-        } else if ((videoContainer as any).mozRequestFullScreen) {
-          (videoContainer as any).mozRequestFullScreen();
-        } else if ((videoContainer as any).msRequestFullscreen) {
-          (videoContainer as any).msRequestFullscreen();
-        }
-        setIsFullscreen(true);
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if ((document as any).webkitExitFullscreen) {
-          (document as any).webkitExitFullscreen();
-        } else if ((document as any).mozCancelFullScreen) {
-          (document as any).mozCancelFullScreen();
-        } else if ((document as any).msExitFullscreen) {
-          (document as any).msExitFullscreen();
-        }
-        setIsFullscreen(false);
-      }
-    }
-    setShowControls(true);
-  };
-
   const toggleMute = () => {
     setIsMuted(!isMuted);
     setShowControls(true);
   };
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    // Listen to all fullscreen change events for cross-browser compatibility
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-    
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
-    };
-  }, []);
 
   if (!isOpen) return null;
 
@@ -156,6 +104,8 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
             muted={isMuted}
             autoPlay
             controls={false}
+            playsInline
+            webkit-playsinline="true"
             onClick={handleVideoClick}
           />
 
@@ -189,27 +139,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
             >
               {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
             </button>
-            
-            {/* Fullscreen button */}
-            <button
-              onClick={toggleFullscreen}
-              className="bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-colors backdrop-blur-sm"
-            >
-              <Maximize className="w-5 h-5" />
-            </button>
           </div>
-
-          {/* En pantalla completa, mostrar el botón X en una posición segura */}
-          {isFullscreen && (
-            <button
-              onClick={onClose}
-              className={`absolute top-4 right-4 text-white hover:text-yellow-400 transition-all duration-300 z-30 bg-black/70 rounded-full p-3 backdrop-blur-sm ${
-                showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
-              }`}
-            >
-              <X className="w-7 h-7" />
-            </button>
-          )}
         </div>
       </div>
     </div>
