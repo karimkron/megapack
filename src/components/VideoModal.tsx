@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, VolumeX, Volume2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, ChevronLeft, ChevronRight, VolumeX, Volume2, Play, Pause } from 'lucide-react';
 
 interface VideoModalProps {
   isOpen: boolean;
@@ -16,6 +16,9 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
   const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [controlsTimeout, setControlsTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     setCurrentVideoIndex(initialVideoIndex);
@@ -56,22 +59,65 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
 
   // Show controls when clicking on video
   const handleVideoClick = () => {
-    setShowControls(true);
+    if (showControls) {
+      // Si los controles están visibles, los ocultamos
+      setShowControls(false);
+    } else {
+      // Si los controles están ocultos, los mostramos
+      setShowControls(true);
+    }
   };
 
   const nextVideo = () => {
     setCurrentVideoIndex((prev) => (prev + 1) % videos.length);
     setShowControls(true);
+    setIsLoading(true);
+    setIsPlaying(false);
   };
 
   const prevVideo = () => {
     setCurrentVideoIndex((prev) => (prev - 1 + videos.length) % videos.length);
     setShowControls(true);
+    setIsLoading(true);
+    setIsPlaying(false);
   };
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
     setShowControls(true);
+  };
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        videoRef.current.play();
+        setIsPlaying(true);
+      }
+      setShowControls(true);
+    }
+  };
+
+  const handleVideoLoadStart = () => {
+    setIsLoading(true);
+  };
+
+  const handleVideoCanPlay = () => {
+    setIsLoading(false);
+    // Auto-reproducir cuando el video está listo para reproducirse
+    if (videoRef.current) {
+      videoRef.current.play();
+    }
+  };
+
+  const handleVideoPlay = () => {
+    setIsPlaying(true);
+  };
+
+  const handleVideoPause = () => {
+    setIsPlaying(false);
   };
 
   if (!isOpen) return null;
@@ -99,15 +145,40 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
           onClick={handleVideoClick}
         >
           <video
+            ref={videoRef}
             src={currentVideo.thumbnail}
             className="w-full h-full object-contain"
             muted={isMuted}
-            autoPlay
             controls={false}
             playsInline
             webkit-playsinline="true"
             onClick={handleVideoClick}
+            onLoadStart={handleVideoLoadStart}
+            onCanPlay={handleVideoCanPlay}
+            onPlay={handleVideoPlay}
+            onPause={handleVideoPause}
           />
+
+          {/* Loading spinner */}
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+              <div className="w-12 h-12 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+            </div>
+          )}
+
+          {/* Play/Pause button overlay */}
+          {!isLoading && (
+            <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${
+              showControls && !isPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}>
+              <button
+                onClick={togglePlay}
+                className="bg-black/50 text-white p-4 rounded-full hover:bg-black/70 transition-all duration-300 backdrop-blur-sm"
+              >
+                <Play className="w-8 h-8 ml-1" />
+              </button>
+            </div>
+          )}
 
           {/* Navigation arrows */}
           <button
@@ -129,9 +200,18 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
           </button>
 
           {/* Bottom controls */}
-          <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4 z-10 transition-all duration-300 ${
+          <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 z-10 transition-all duration-300 ${
             showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}>
+            {/* Play/Pause button */}
+            <button
+              onClick={togglePlay}
+              className="bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-colors backdrop-blur-sm"
+              disabled={isLoading}
+            >
+              {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+            </button>
+            
             {/* Mute button */}
             <button
               onClick={toggleMute}
