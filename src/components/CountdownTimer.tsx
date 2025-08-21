@@ -3,7 +3,7 @@ import { Clock } from 'lucide-react';
 
 const CountdownTimer: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState({
-    hours: 23,
+    hours: 19,
     minutes: 59,
     seconds: 59
   });
@@ -19,7 +19,7 @@ const CountdownTimer: React.FC = () => {
           return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
         } else {
           // Reset timer when it reaches 0
-          return { hours: 23, minutes: 59, seconds: 59 };
+          return { hours: 19, minutes: 59, seconds: 59 };
         }
       });
     }, 1000);
