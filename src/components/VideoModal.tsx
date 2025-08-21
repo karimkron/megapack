@@ -22,6 +22,10 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
 
   useEffect(() => {
     setCurrentVideoIndex(initialVideoIndex);
+    // Resetear estados cuando cambia el video y mostrar controles
+    setIsLoading(true);
+    setIsPlaying(false);
+    setShowControls(true);
   }, [initialVideoIndex]);
 
   useEffect(() => {
@@ -36,11 +40,17 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
     };
   }, [isOpen]);
 
-  // Auto-hide controls after 4 seconds
+  // Auto-hide controls after 4 seconds, pero no si el video está pausado en móvil
   useEffect(() => {
     if (showControls) {
       if (controlsTimeout) {
         clearTimeout(controlsTimeout);
+      }
+      
+      // En móvil, no ocultar controles automáticamente si el video está pausado
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile && !isPlaying) {
+        return; // No iniciar timer si estamos en móvil y el video está pausado
       }
       
       const timeout = setTimeout(() => {
@@ -55,7 +65,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
         clearTimeout(controlsTimeout);
       }
     };
-  }, [showControls]);
+  }, [showControls, isPlaying]);
 
   // Show controls when clicking on video
   const handleVideoClick = () => {
@@ -93,8 +103,12 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
         videoRef.current.pause();
         setIsPlaying(false);
       } else {
-        videoRef.current.play();
-        setIsPlaying(true);
+        videoRef.current.play().then(() => {
+          setIsPlaying(true);
+        }).catch((error) => {
+          console.log('Error al reproducir video:', error);
+          setIsPlaying(false);
+        });
       }
       setShowControls(true);
     }
@@ -102,13 +116,21 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
 
   const handleVideoLoadStart = () => {
     setIsLoading(true);
+    setIsPlaying(false);
   };
 
   const handleVideoCanPlay = () => {
     setIsLoading(false);
-    // Auto-reproducir cuando el video está listo para reproducirse
-    if (videoRef.current) {
-      videoRef.current.play();
+    // Solo auto-reproducir en escritorio, en móvil esperar interacción del usuario
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (!isMobile && videoRef.current) {
+      videoRef.current.play().catch(() => {
+        // Si falla el autoplay, no hacer nada
+        setIsPlaying(false);
+      });
+    } else {
+      // En móvil, asegurar que los controles estén visibles
+      setShowControls(true);
     }
   };
 
@@ -152,11 +174,16 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
             controls={false}
             playsInline
             webkit-playsinline="true"
+            preload="metadata"
             onClick={handleVideoClick}
             onLoadStart={handleVideoLoadStart}
             onCanPlay={handleVideoCanPlay}
             onPlay={handleVideoPlay}
             onPause={handleVideoPause}
+            onError={() => {
+              setIsLoading(false);
+              console.log('Error cargando video');
+            }}
           />
 
           {/* Loading spinner */}
