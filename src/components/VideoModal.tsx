@@ -189,6 +189,8 @@ const VideoModal: React.FC<VideoModalProps> = ({
             muted={isMuted}
             autoPlay
             controls={false}
+            playsInline // ← Esto previene pantalla completa automática
+            webkit-playsinline="true" 
             onClick={handleVideoClick}
           />
           {/* Navigation arrows */}
