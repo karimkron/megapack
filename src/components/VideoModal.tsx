@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Play, Pause, VolumeX, Volume2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { X, ChevronLeft, ChevronRight, Play, Pause, VolumeX, Volume2, AlertCircle } from 'lucide-react';
 
 interface VideoModalProps {
   isOpen: boolean;
@@ -21,14 +21,32 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
   const [controlsTimeout, setControlsTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [hasError, setHasError] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [loadTimeout, setLoadTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [debugInfo, setDebugInfo] = useState('');
   
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Detectar si es iOS
+  // Detectar dispositivos móviles y iOS específicamente
+  const isMobile = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
+
   const isIOS = () => {
     return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   };
+
+  // Limpiar timeouts
+  const clearAllTimeouts = useCallback(() => {
+    if (controlsTimeout) {
+      clearTimeout(controlsTimeout);
+      setControlsTimeout(null);
+    }
+    if (loadTimeout) {
+      clearTimeout(loadTimeout);
+      setLoadTimeout(null);
+    }
+  }, [controlsTimeout, loadTimeout]);
 
   useEffect(() => {
     setCurrentVideoIndex(initialVideoIndex);
@@ -38,17 +56,39 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       setShowControls(true);
-      setHasUserInteracted(false); // Reset interaction state
+      setHasUserInteracted(false);
     } else {
       document.body.style.overflow = 'unset';
+      clearAllTimeouts();
     }
 
     return () => {
       document.body.style.overflow = 'unset';
+      clearAllTimeouts();
     };
-  }, [isOpen]);
+  }, [isOpen, clearAllTimeouts]);
 
-  // Auto-hide controls after 4 seconds
+  // Timeout para loading infinito - CRÍTICO para iOS
+  useEffect(() => {
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        if (isLoading) {
+          setIsLoading(false);
+          setHasError(true);
+          setDebugInfo('Video loading timeout - possible network or codec issue');
+        }
+      }, 15000); // 15 segundos timeout
+      
+      setLoadTimeout(timeout);
+    } else {
+      if (loadTimeout) {
+        clearTimeout(loadTimeout);
+        setLoadTimeout(null);
+      }
+    }
+  }, [isLoading, loadTimeout]);
+
+  // Auto-hide controls
   useEffect(() => {
     if (showControls && isOpen && isPlaying) {
       if (controlsTimeout) {
@@ -61,58 +101,101 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
       
       setControlsTimeout(timeout);
     }
-    
-    return () => {
-      if (controlsTimeout) {
-        clearTimeout(controlsTimeout);
-      }
-    };
   }, [showControls, isOpen, isPlaying]);
 
-  // Reset states when video changes
+  // Reset estados cuando cambia el video
   useEffect(() => {
     setIsLoading(true);
     setIsPlaying(false);
     setHasError(false);
-  }, [currentVideoIndex]);
+    setHasUserInteracted(false);
+    setDebugInfo('');
+    clearAllTimeouts();
+  }, [currentVideoIndex, clearAllTimeouts]);
 
-  const handleVideoLoad = () => {
-    setIsLoading(false);
+  // Manejo de eventos del video con debug info
+  const handleLoadStart = () => {
+    setIsLoading(true);
     setHasError(false);
+    setDebugInfo('Starting video load...');
   };
 
-  const handleVideoCanPlay = async () => {
+  const handleLoadedMetadata = () => {
+    setDebugInfo('Metadata loaded successfully');
+    
+    // Para iOS, esto es suficiente para mostrar el primer frame
+    if (isIOS()) {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCanPlay = async () => {
     setIsLoading(false);
     setHasError(false);
+    setDebugInfo('Video ready to play');
     
-    // En iOS, NO intentar autoplay hasta que el usuario interactúe
-    if (!isIOS() && isOpen && videoRef.current) {
+    // Solo autoplay en desktop
+    if (!isMobile() && isOpen && videoRef.current) {
       try {
         await videoRef.current.play();
         setIsPlaying(true);
       } catch (error) {
-        console.log('Autoplay prevented:', error);
+        setDebugInfo('Autoplay prevented: ' + error);
         setIsPlaying(false);
       }
     }
   };
 
-  const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+  const handleError = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    const error = video.error;
+    
     setIsLoading(false);
     setHasError(true);
-    console.error('Error loading video:', e);
+    
+    let errorMsg = 'Unknown video error';
+    if (error) {
+      switch (error.code) {
+        case error.MEDIA_ERR_ABORTED:
+          errorMsg = 'Video loading aborted';
+          break;
+        case error.MEDIA_ERR_NETWORK:
+          errorMsg = 'Network error loading video';
+          break;
+        case error.MEDIA_ERR_DECODE:
+          errorMsg = 'Video decode error - codec issue';
+          break;
+        case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+          errorMsg = 'Video format not supported';
+          break;
+      }
+    }
+    
+    setDebugInfo(errorMsg);
+    console.error('Video error:', errorMsg, error);
   };
 
-  const handleVideoPlay = () => {
+  const handlePlay = () => {
     setIsPlaying(true);
+    setDebugInfo('Video playing');
   };
 
-  const handleVideoPause = () => {
+  const handlePause = () => {
     setIsPlaying(false);
+    setDebugInfo('Video paused');
+  };
+
+  const handleWaiting = () => {
+    setIsLoading(true);
+    setDebugInfo('Video buffering...');
+  };
+
+  const handlePlaying = () => {
+    setIsLoading(false);
+    setDebugInfo('Video playing smoothly');
   };
 
   const handleVideoClick = () => {
-    // Marcar que el usuario ha interactuado
     if (!hasUserInteracted) {
       setHasUserInteracted(true);
     }
@@ -120,7 +203,6 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
     if (isPlaying) {
       setShowControls(!showControls);
     } else {
-      // Si el video no está reproduciendo, intentar reproducir
       togglePlayPause();
     }
   };
@@ -128,17 +210,11 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
   const nextVideo = () => {
     setCurrentVideoIndex((prev) => (prev + 1) % videos.length);
     setShowControls(true);
-    setIsLoading(true);
-    setHasError(false);
-    setHasUserInteracted(false); // Reset interaction para el nuevo video
   };
 
   const prevVideo = () => {
     setCurrentVideoIndex((prev) => (prev - 1 + videos.length) % videos.length);
     setShowControls(true);
-    setIsLoading(true);
-    setHasError(false);
-    setHasUserInteracted(false); // Reset interaction para el nuevo video
   };
 
   const togglePlayPause = async () => {
@@ -150,23 +226,35 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
       if (isPlaying) {
         videoRef.current.pause();
       } else {
-        // Para iOS, asegurar que el video esté listo
+        // Verificar si el video está listo
         if (videoRef.current.readyState >= 2) {
           await videoRef.current.play();
         } else {
+          // Forzar carga si no está listo
+          videoRef.current.load();
+          
           // Esperar a que esté listo
-          videoRef.current.addEventListener('canplay', async () => {
-            try {
-              await videoRef.current!.play();
-            } catch (error) {
-              console.error('Play failed:', error);
-              setHasError(true);
+          const playWhenReady = () => {
+            if (videoRef.current && videoRef.current.readyState >= 2) {
+              videoRef.current.play().catch((error) => {
+                setDebugInfo('Play failed: ' + error.message);
+                setHasError(true);
+              });
             }
-          }, { once: true });
+          };
+          
+          videoRef.current.addEventListener('canplay', playWhenReady, { once: true });
+          
+          // Timeout de seguridad
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.removeEventListener('canplay', playWhenReady);
+            }
+          }, 5000);
         }
       }
-    } catch (error) {
-      console.error('Play failed:', error);
+    } catch (error: any) {
+      setDebugInfo('Play error: ' + error.message);
       setHasError(true);
     }
     
@@ -176,6 +264,15 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
   const toggleMute = () => {
     setIsMuted(!isMuted);
     setShowControls(true);
+  };
+
+  const forceReload = () => {
+    if (videoRef.current) {
+      setIsLoading(true);
+      setHasError(false);
+      setDebugInfo('Force reloading video...');
+      videoRef.current.load();
+    }
   };
 
   if (!isOpen) return null;
@@ -196,6 +293,13 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
           <X className="w-6 h-6" />
         </button>
 
+        {/* Debug info (solo en desarrollo) */}
+        {process.env.NODE_ENV === 'development' && debugInfo && (
+          <div className="absolute top-20 left-4 right-4 bg-black/80 text-white p-2 rounded text-xs z-30">
+            {debugInfo}
+          </div>
+        )}
+
         {/* Video container */}
         <div 
           className="relative bg-black overflow-hidden rounded-lg w-full" 
@@ -204,72 +308,87 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
         >
           {hasError ? (
             <div className="absolute inset-0 flex items-center justify-center bg-black">
-              <div className="text-center text-white">
-                <p className="mb-4">Error al cargar el video</p>
-                <button 
-                  onClick={() => {
-                    setHasError(false);
-                    setIsLoading(true);
-                    setHasUserInteracted(false);
-                    if (videoRef.current) {
-                      videoRef.current.load();
-                    }
-                  }}
-                  className="bg-yellow-400 text-black px-4 py-2 rounded"
-                >
-                  Reintentar
-                </button>
+              <div className="text-center text-white p-4">
+                <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                <p className="mb-4 text-sm">{debugInfo || 'Error al cargar el video'}</p>
+                <div className="space-y-2">
+                  <button 
+                    onClick={forceReload}
+                    className="bg-yellow-400 text-black px-4 py-2 rounded text-sm mr-2"
+                  >
+                    Reintentar
+                  </button>
+                  <button 
+                    onClick={() => window.open(currentVideo.videoUrl, '_blank')}
+                    className="bg-blue-500 text-white px-4 py-2 rounded text-sm"
+                  >
+                    Abrir en nueva pestaña
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
-            <video
-              ref={videoRef}
-              src={currentVideo.videoUrl}
-              poster={currentVideo.thumbnail}
-              className="w-full h-full object-contain"
-              // ORDEN CRÍTICO PARA IOS: muted ANTES que otros atributos
-              muted={isMuted}
-              playsInline
-              preload="metadata"
-              controlsList="nodownload nofullscreen noremoteplayback"
-              disablePictureInPicture
-              // Atributos específicos para iOS
-              webkit-playsinline="true"
-              x5-playsinline="true"
-              x5-video-player-type="h5"
-              x5-video-player-fullscreen="true"
-              // NO usar autoplay en iOS - causará problemas
-              {...(!isIOS() && { autoplay: true })}
-              // Event handlers
-              onLoadedData={handleVideoLoad}
-              onCanPlay={handleVideoCanPlay}
-              onError={handleVideoError}
-              onPlay={handleVideoPlay}
-              onPause={handleVideoPause}
-              // Eventos adicionales para mejor compatibilidad con iOS
-              onLoadStart={() => setIsLoading(true)}
-              onWaiting={() => setIsLoading(true)}
-              onPlaying={() => setIsLoading(false)}
-            />
-          )}
-
-          {/* Loading Spinner */}
-          {isLoading && !hasError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-              <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-            </div>
-          )}
-
-          {/* Mensaje específico para iOS cuando no hay interacción */}
-          {isIOS() && !hasUserInteracted && !isLoading && !hasError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-              <div className="text-center text-white p-4">
-                <div className="bg-yellow-400 text-black p-4 rounded-full mb-4 mx-auto w-16 h-16 flex items-center justify-center">
-                  <Play className="w-8 h-8 ml-1" />
+            <>
+              <video
+                ref={videoRef}
+                className="w-full h-full object-contain"
+                // ORDEN CRÍTICO PARA iOS
+                muted={isMuted}
+                playsInline
+                webkit-playsinline="true"
+                x5-playsinline="true"
+                x5-video-player-type="h5"
+                x5-video-player-fullscreen="true"
+                // Configuración específica para iOS
+                preload={isMobile() ? "metadata" : "auto"}
+                controlsList="nodownload nofullscreen noremoteplaybar"
+                disablePictureInPicture
+                disableRemotePlayback
+                // Poster siempre visible
+                poster={currentVideo.thumbnail}
+                // Event handlers completos
+                onLoadStart={handleLoadStart}
+                onLoadedMetadata={handleLoadedMetadata}
+                onCanPlay={handleCanPlay}
+                onError={handleError}
+                onPlay={handlePlay}
+                onPause={handlePause}
+                onWaiting={handleWaiting}
+                onPlaying={handlePlaying}
+                onStalled={() => setDebugInfo('Video stalled - network issue')}
+                onSuspend={() => setDebugInfo('Video suspended')}
+                onProgress={() => setDebugInfo('Video downloading...')}
+              >
+                {/* Múltiples fuentes para mejor compatibilidad */}
+                <source src={currentVideo.videoUrl} type="video/mp4" />
+                Tu navegador no soporta video HTML5.
+              </video>
+              
+              {/* Loading Spinner con timeout visual */}
+              {isLoading && !hasError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                  <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4"></div>
+                    <div className="text-white text-sm">
+                      {isMobile() ? 'Cargando...' : 'Preparando video...'}
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm">Toca para reproducir</p>
-              </div>
-            </div>
+              )}
+
+              {/* Mensaje para móviles sin interacción */}
+              {isMobile() && !hasUserInteracted && !isLoading && !hasError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+                  <div className="text-center text-white p-6">
+                    <div className="bg-yellow-400 text-black p-4 rounded-full mb-4 mx-auto w-16 h-16 flex items-center justify-center">
+                      <Play className="w-8 h-8 ml-1" />
+                    </div>
+                    <p className="text-lg font-semibold mb-2">Toca para reproducir</p>
+                    <p className="text-sm text-gray-300">Los videos requieren interacción en móviles</p>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Navigation arrows */}
