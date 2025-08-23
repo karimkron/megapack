@@ -7,6 +7,7 @@ interface VideoModalProps {
   videos: Array<{
     id: number;
     thumbnail: string;
+    videoUrl: string; // Agregamos la URL del video real
   }>;
   initialVideoIndex: number;
 }
@@ -18,6 +19,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
   const [isLoading, setIsLoading] = useState(true);
   const [showControls, setShowControls] = useState(true);
   const [controlsTimeout, setControlsTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [hasError, setHasError] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -28,7 +30,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      setShowControls(true); // Mostrar controles al abrir
+      setShowControls(true);
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -40,14 +42,14 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
 
   // Auto-hide controls after 4 seconds
   useEffect(() => {
-    if (showControls && isOpen) {
+    if (showControls && isOpen && isPlaying) {
       if (controlsTimeout) {
         clearTimeout(controlsTimeout);
       }
       
       const timeout = setTimeout(() => {
         setShowControls(false);
-      }, 4000); // Cambiado a 4 segundos
+      }, 4000);
       
       setControlsTimeout(timeout);
     }
@@ -57,13 +59,19 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
         clearTimeout(controlsTimeout);
       }
     };
-  }, [showControls, isOpen]);
+  }, [showControls, isOpen, isPlaying]);
 
   // Manejar eventos del video
   const handleVideoLoad = () => {
     setIsLoading(false);
-    // Intentar reproducir automáticamente
-    if (videoRef.current) {
+    setHasError(false);
+  };
+
+  const handleVideoCanPlay = () => {
+    setIsLoading(false);
+    setHasError(false);
+    // Intentar reproducir automáticamente solo si el usuario ya interactuó
+    if (videoRef.current && isOpen) {
       const playPromise = videoRef.current.play();
       if (playPromise !== undefined) {
         playPromise
@@ -78,9 +86,10 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
     }
   };
 
-  const handleVideoError = () => {
+  const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     setIsLoading(false);
-    console.error('Error loading video');
+    setHasError(true);
+    console.error('Error loading video:', e);
   };
 
   const handleVideoPlay = () => {
@@ -100,20 +109,28 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
     setCurrentVideoIndex((prev) => (prev + 1) % videos.length);
     setShowControls(true);
     setIsLoading(true);
+    setHasError(false);
   };
 
   const prevVideo = () => {
     setCurrentVideoIndex((prev) => (prev - 1 + videos.length) % videos.length);
     setShowControls(true);
     setIsLoading(true);
+    setHasError(false);
   };
 
   const togglePlayPause = () => {
-    if (videoRef.current) {
+    if (videoRef.current && !hasError) {
       if (isPlaying) {
         videoRef.current.pause();
       } else {
-        videoRef.current.play();
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => {
+            console.error('Play failed:', error);
+            setHasError(true);
+          });
+        }
       }
     }
     setShowControls(true);
@@ -128,6 +145,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
   useEffect(() => {
     setIsLoading(true);
     setIsPlaying(false);
+    setHasError(false);
   }, [currentVideoIndex]);
 
   if (!isOpen) return null;
@@ -138,7 +156,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
     <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
       <div className="relative w-full max-w-sm mx-auto h-full flex items-center justify-center p-4">
         
-        {/* Close button - Reposicionado */}
+        {/* Close button */}
         <button
           onClick={onClose}
           className={`absolute top-8 right-8 text-white hover:text-red-400 transition-all duration-300 z-30 bg-black/70 rounded-full p-3 backdrop-blur-sm ${
@@ -154,23 +172,49 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
           style={{ aspectRatio: '9/16', maxHeight: '80vh' }}
           onClick={handleVideoClick}
         >
-          <video
-            ref={videoRef}
-            src={currentVideo.thumbnail}
-            className="w-full h-full object-contain"
-            muted={isMuted}
-            playsInline // Crucial para iOS - evita pantalla completa automática
-            preload="metadata"
-            onLoadedData={handleVideoLoad}
-            onError={handleVideoError}
-            onPlay={handleVideoPlay}
-            onPause={handleVideoPause}
-            controlsList="nodownload nofullscreen" // Oculta botón de pantalla completa
-            disablePictureInPicture // Desactiva picture-in-picture
-          />
+          {hasError ? (
+            // Error state
+            <div className="absolute inset-0 flex items-center justify-center bg-black">
+              <div className="text-center text-white">
+                <p className="mb-4">Error al cargar el video</p>
+                <button 
+                  onClick={() => {
+                    setHasError(false);
+                    setIsLoading(true);
+                    if (videoRef.current) {
+                      videoRef.current.load();
+                    }
+                  }}
+                  className="bg-yellow-400 text-black px-4 py-2 rounded"
+                >
+                  Reintentar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <video
+              ref={videoRef}
+              src={currentVideo.videoUrl} // Usar la URL del video, no el thumbnail
+              poster={currentVideo.thumbnail} // Usar el thumbnail como poster
+              className="w-full h-full object-contain"
+              muted={isMuted}
+              playsInline // Crucial para iOS
+              preload="metadata"
+              onLoadedData={handleVideoLoad}
+              onCanPlay={handleVideoCanPlay}
+              onError={handleVideoError}
+              onPlay={handleVideoPlay}
+              onPause={handleVideoPause}
+              controlsList="nodownload nofullscreen"
+              disablePictureInPicture
+              // Agregamos estos atributos para mejor compatibilidad con iOS
+              webkit-playsinline="true"
+              x5-playsinline="true"
+            />
+          )}
 
           {/* Loading Spinner */}
-          {isLoading && (
+          {isLoading && !hasError && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
               <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
             </div>
@@ -203,7 +247,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
           <button
             onClick={togglePlayPause}
             className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/70 text-white p-4 rounded-full hover:bg-black/90 transition-all duration-300 z-20 backdrop-blur-sm ${
-              showControls && !isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              showControls && !isLoading && !hasError ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           >
             {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}

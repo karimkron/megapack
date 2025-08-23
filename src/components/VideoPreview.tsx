@@ -3,45 +3,15 @@ import { Play } from 'lucide-react';
 
 interface VideoPreviewProps {
   onVideoClick: (videoIndex: number) => void;
+  videos: Array<{
+    id: number;
+    thumbnail: string;
+    videoUrl: string;
+  }>;
 }
 
-const VideoPreview: React.FC<VideoPreviewProps> = ({ onVideoClick }) => {
-  const previewVideos = [
-    {
-      id: 1,
-      thumbnail: "/thumbnails/thumb1.png",
-    },
-    {
-      id: 2,
-      thumbnail: "/thumbnails/thumb2.png",
-    },
-    {
-      id: 3,
-      thumbnail: "/thumbnails/thumb3.png",
-    },
-    {
-      id: 4,
-      thumbnail: "/thumbnails/thumb4.png",
-    },
-    {
-      id: 5,
-      thumbnail: "/thumbnails/thumb5.png",
-    },
-    {
-      id: 6,
-      thumbnail: "/thumbnails/thumb6.png",
-    },
-    {
-      id: 7,
-      thumbnail: "/thumbnails/thumb7.png",
-    },
-    {
-      id: 8,
-      thumbnail: "/thumbnails/thumb8.png",
-    }
-  ];
-
-  
+const VideoPreview: React.FC<VideoPreviewProps> = ({ onVideoClick, videos }) => {
+  const previewVideos = videos;
 
   return (
     <div className="py-12 px-4 bg-gradient-to-b from-black to-gray-900">

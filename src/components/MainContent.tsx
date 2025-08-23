@@ -14,38 +14,47 @@ const MainContent: React.FC<MainContentProps> = ({ onCtaClick }) => {
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
 
+  // Estructura corregida: separamos thumbnail (imagen) del videoUrl (video real)
   const previewVideos = [
     {
       id: 1,
-      thumbnail: "/video/video1.mp4",
+      thumbnail: "/thumbnails/thumb1.png", // Imagen para mostrar en la preview
+      videoUrl: "/video/video1.mp4",       // Video real para reproducir en el modal
     },
     {
       id: 2,
-      thumbnail: "/video/video2.mp4",
+      thumbnail: "/thumbnails/thumb2.png",
+      videoUrl: "/video/video2.mp4",
     },
     {
       id: 3,
-      thumbnail: "/video/video3.mp4",
+      thumbnail: "/thumbnails/thumb3.png",
+      videoUrl: "/video/video3.mp4",
     },
     {
       id: 4,
-      thumbnail: "/video/video4.mp4",
+      thumbnail: "/thumbnails/thumb4.png",
+      videoUrl: "/video/video4.mp4",
     },
     {
       id: 5,
-      thumbnail: "/video/video5.mov",
+      thumbnail: "/thumbnails/thumb5.png",
+      videoUrl: "/video/video5.mov",
     },
     {
       id: 6,
-      thumbnail: "/video/video6.mov",
+      thumbnail: "/thumbnails/thumb6.png",
+      videoUrl: "/video/video6.mov",
     },
     {
       id: 7,
-      thumbnail: "/video/video7.mp4",
+      thumbnail: "/thumbnails/thumb7.png",
+      videoUrl: "/video/video7.mp4",
     },
     {
       id: 8,
-      thumbnail: "/video/video8.mp4",
+      thumbnail: "/thumbnails/thumb8.png",
+      videoUrl: "/video/video8.mp4",
     }
   ];
 
@@ -58,7 +67,10 @@ const MainContent: React.FC<MainContentProps> = ({ onCtaClick }) => {
   return (
     <div className="pb-10">
       {/* Video Preview Section */}
-      <VideoPreview onVideoClick={handleVideoClick} />
+      <VideoPreview 
+        onVideoClick={handleVideoClick} 
+        videos={previewVideos} // Pasamos la estructura completa
+      />
 
       {/* Testimonios - Solo imágenes */}
       <section className="py-16 bg-gradient-to-b from-black to-gray-900">
