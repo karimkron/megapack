@@ -225,7 +225,7 @@ const MainContent: React.FC<MainContentProps> = ({ onCtaClick }) => {
             Mega Pack Videos de Lujo
           </div>
           <p className="text-gray-400 text-sm mb-4">Tu éxito en redes sociales empieza aquí</p>
-          <p className="text-gray-500 text-xs">© 2024 Mega Pack Videos de Lujo. Todos los derechos reservados.</p>
+          <p className="text-gray-500 text-xs">© 2025 Mega Pack Videos de Lujo. Todos los derechos reservados.</p>
         </div>
       </footer>
 
