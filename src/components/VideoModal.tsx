@@ -1,5 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Maximize, VolumeX, Volume2 } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  X,
+  ChevronLeft,
+  ChevronRight,
+  VolumeX,
+  Volume2,
+} from "lucide-react";
 
 interface VideoModalProps {
   isOpen: boolean;
@@ -11,12 +17,19 @@ interface VideoModalProps {
   initialVideoIndex: number;
 }
 
-const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initialVideoIndex }) => {
+const VideoModal: React.FC<VideoModalProps> = ({
+  isOpen,
+  onClose,
+  videos,
+  initialVideoIndex,
+}) => {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(initialVideoIndex);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const [controlsTimeout, setControlsTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [controlsTimeout, setControlsTimeout] = useState<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   useEffect(() => {
     setCurrentVideoIndex(initialVideoIndex);
@@ -24,13 +37,13 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [isOpen]);
 
@@ -40,14 +53,14 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
       if (controlsTimeout) {
         clearTimeout(controlsTimeout);
       }
-      
+
       const timeout = setTimeout(() => {
         setShowControls(false);
       }, 2000);
-      
+
       setControlsTimeout(timeout);
     }
-    
+
     return () => {
       if (controlsTimeout) {
         clearTimeout(controlsTimeout);
@@ -69,9 +82,9 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
     setShowControls(true);
   };
 
-  const toggleFullscreen = () => {
-    const videoContainer = document.getElementById('video-container');
-    
+ /*  const toggleFullscreen = () => {
+    const videoContainer = document.getElementById("video-container");
+
     if (videoContainer) {
       if (!document.fullscreenElement) {
         // Try different fullscreen methods for mobile compatibility
@@ -99,7 +112,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
       }
     }
     setShowControls(true);
-  };
+  }; */
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
@@ -112,16 +125,25 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
     };
 
     // Listen to all fullscreen change events for cross-browser compatibility
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-    
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+
     return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        "mozfullscreenchange",
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        "MSFullscreenChange",
+        handleFullscreenChange
+      );
     };
   }, []);
 
@@ -130,40 +152,50 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
   const currentVideo = videos[currentVideoIndex];
 
   return (
-    <div className={`fixed inset-0 z-50 bg-black flex items-center justify-center ${isFullscreen ? 'p-0' : 'p-4'}`}>
-      <div className={`relative ${isFullscreen ? 'w-full h-full' : 'w-full max-w-sm mx-auto'}`}>
+    <div
+      className={`fixed inset-0 z-50 bg-black flex items-center justify-center ${
+        isFullscreen ? "p-0" : "p-4"
+      }`}
+    >
+      <div
+        className={`relative ${
+          isFullscreen ? "w-full h-full" : "w-full max-w-sm mx-auto"
+        }`}
+      >
         {/* Close button */}
         <button
           onClick={onClose}
-          className={`absolute ${isFullscreen ? 'top-4 right-4' : '-top-12 right-0'} text-white hover:text-yellow-400 transition-all duration-300 z-20 bg-black/50 rounded-full p-2 ${
-            showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          className={`absolute ${
+            isFullscreen ? "top-4 right-4" : "top-0 right-0"
+          } text-white hover:text-yellow-400 transition-all duration-300 z-20 bg-black/50 rounded-full p-2 ${
+            showControls ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
           <X className="w-6 h-6" />
         </button>
 
         {/* Video container */}
-        <div 
-          id="video-container" 
-          className={`relative bg-black overflow-hidden ${isFullscreen ? 'w-full h-full' : 'rounded-lg'}`} 
-          style={isFullscreen ? {} : { aspectRatio: '9/16' }}
+        <div
+          id="video-container"
+          className={`relative bg-black overflow-hidden ${
+            isFullscreen ? "w-full h-full" : "rounded-lg"
+          }`}
+          style={isFullscreen ? {} : { aspectRatio: "9/16" }}
           onClick={handleVideoClick}
         >
           <video
-  src={currentVideo.thumbnail}
-  className="w-full h-full object-contain"
-  muted={isMuted}
-  autoPlay
-  controls={false}
-  onClick={handleVideoClick}
-/>
-
-
+            src={currentVideo.thumbnail}
+            className="w-full h-full object-contain"
+            muted={isMuted}
+            autoPlay
+            controls={false}
+            onClick={handleVideoClick}
+          />
           {/* Navigation arrows */}
           <button
             onClick={prevVideo}
             className={`absolute left-4 top-1/2 -translate-y-1/2 bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-all duration-300 z-10 ${
-              showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              showControls ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
           >
             <ChevronLeft className="w-6 h-6" />
@@ -172,31 +204,37 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videos, initia
           <button
             onClick={nextVideo}
             className={`absolute right-4 top-1/2 -translate-y-1/2 bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-all duration-300 z-10 ${
-              showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              showControls ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
           >
             <ChevronRight className="w-6 h-6" />
           </button>
 
           {/* Bottom controls */}
-          <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4 z-10 transition-all duration-300 ${
-            showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}>
+          <div
+            className={`absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4 z-10 transition-all duration-300 ${
+              showControls ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
+          >
             {/* Mute button */}
             <button
               onClick={toggleMute}
               className="bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-colors"
             >
-              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+              {isMuted ? (
+                <VolumeX className="w-5 h-5" />
+              ) : (
+                <Volume2 className="w-5 h-5" />
+              )}
             </button>
-            
+
             {/* Fullscreen button */}
-            <button
+            {/* <button
               onClick={toggleFullscreen}
               className="bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-colors"
             >
               <Maximize className="w-5 h-5" />
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
